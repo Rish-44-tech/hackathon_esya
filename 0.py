@@ -1,13 +1,32 @@
 import pandas as pd
-class Strategy:
-    def __init__(self):
-        self.name = "manav25303- <strategyname>"
-        self.description = "One-liner of your approach."
 
-    def fit(self, train_df: pd.DataFrame) -> None:
-        # Train on train_df (days 1..n)
-        pass
+def regularize_and_impute_crypto(path_in: str, path_out: str):
+    """
+    Reads a CSV with columns: timestamp, open, high, low, close, volume
+    - Ensures continuous 1-minute UTC grid (crypto 24/7).
+    - Imputes missing OHLCV safely.
+    - Writes a clean CSV ready for strategy training/backtesting.
+    """
 
-    def predict(self, test_df: pd.DataFrame) -> pd.Series:
-        # Return one of {"BUY","SELL","HOLD"} for each row
-        return pd.Series("HOLD", index=test_df.index)
+    df = pd.read_csv(path_in)
+    df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+    df = df.sort_values("timestamp").drop_duplicates("timestamp")
+
+    start, end = df["timestamp"].min(), df["timestamp"].max()
+    full_index = pd.date_range(start, end, freq="T", tz="UTC")
+    df = df.set_index("timestamp").reindex(full_index)
+    df.index.name = "timestamp"
+
+    df['close'] = df['close'].fillna(df['close'].mean())
+
+    df['open'] = df['open'].fillna(df['open'].mean())
+
+    df["high"] = df["high"].fillna(df[["open","close"]].max(axis=1))
+    df["low"]  = df["low"].fillna(df[["open","close"]].min(axis=1))
+
+    df["volume"] = df["volume"].fillna(df['volume'].median())
+
+    df.reset_index().to_csv(path_out, index=False)
+    print(f"Cleaned data written to {path_out}, rows: {len(df):,}")
+
+regularize_and_impute_crypto("train.csv", "train.csv")
