@@ -30,3 +30,71 @@ def regularize_and_impute_crypto(path_in: str, path_out: str):
     print(f"Cleaned data written to {path_out}, rows: {len(df):,}")
 
 regularize_and_impute_crypto("train.csv", "train.csv")
+
+
+df = pd.read_csv("train.csv")
+
+col = "close"
+
+# Calculate Q1 (25th percentile) and Q3 (75th percentile)
+Q1 = df[col].quantile(0.25)
+Q3 = df[col].quantile(0.75)
+IQR = Q3 - Q1
+
+# Define bounds
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Create outlier mask
+outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)
+
+# Count outliers
+num_outliers = outlier_mask.sum()
+
+print("Before:", df.shape)
+print("Outliers detected:", num_outliers)
+
+# Replace outliers with mean of the column
+mean_val = df[col].mean()
+df.loc[outlier_mask, col] = mean_val
+
+print("After replacement:", df.shape)
+
+# Save to CSV
+df.to_csv("train_clean.csv", index=False)
+print("✅ Cleaned data saved to train_clean.csv")
+
+
+
+df = pd.read_csv("train_clean.csv")
+
+col = "open"
+
+# Calculate Q1 (25th percentile) and Q3 (75th percentile)
+Q1 = df[col].quantile(0.25)
+Q3 = df[col].quantile(0.75)
+IQR = Q3 - Q1
+
+# Define bounds
+lower_bound = Q1 - 1.5 * IQR
+upper_bound = Q3 + 1.5 * IQR
+
+# Create outlier mask
+outlier_mask = (df[col] < lower_bound) | (df[col] > upper_bound)
+
+# Count outliers
+num_outliers = outlier_mask.sum()
+
+print("Before:", df.shape)
+print("Outliers detected:", num_outliers)
+
+# Replace outliers with mean of the column
+mean_val = df[col].mean()
+df.loc[outlier_mask, col] = mean_val
+
+print("After replacement:", df.shape)
+
+# Save to CSV
+df.to_csv("train_clean.csv", index=False)
+print("✅ Cleaned data saved to train_clean.csv")
+
